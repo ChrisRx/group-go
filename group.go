@@ -1,3 +1,4 @@
+// Package group provides [group.Group] for managing pools of goroutines.
 package group // import "go.chrisrx.dev/group"
 
 import (
@@ -7,12 +8,14 @@ import (
 
 type GroupOption func(*Group)
 
+// WithLimit sets the bounded concurrency for a pool of goroutines.
 func WithLimit(n int) GroupOption {
 	return func(g *Group) {
 		g.limit = make(chan struct{}, n)
 	}
 }
 
+// Group manages a pool of goroutines.
 type Group struct {
 	wg sync.WaitGroup
 
@@ -20,12 +23,15 @@ type Group struct {
 	cancel context.CancelCauseFunc
 
 	limit chan struct{}
+
+	mu    sync.Mutex
 	ready chan struct{}
 
 	once sync.Once
 	err  error
 }
 
+// New constructs a new group using the provided options.
 func New(ctx context.Context, opts ...GroupOption) *Group {
 	g := &Group{
 		ready: make(chan struct{}),
@@ -37,17 +43,26 @@ func New(ctx context.Context, opts ...GroupOption) *Group {
 	return g
 }
 
+// Go runs the provided function in a goroutine. If an error is encountered,
+// the context for the group is canceled.
+//
+// If a concurrency limit is set, calls to Go will block once the number of
+// running goroutines is reached and will continue blocking until a running
+// goroutine returns.
 func (g *Group) Go(fn func(context.Context) error) *Group {
-	if g.ready != nil {
-		close(g.ready)
-		g.ready = nil
-	}
-
 	if g.limit != nil {
 		g.limit <- struct{}{}
 	}
 
 	g.wg.Add(1)
+
+	g.mu.Lock()
+	if g.ready != nil {
+		close(g.ready)
+		g.ready = nil
+	}
+	g.mu.Unlock()
+
 	go func() {
 		defer func() {
 			if g.limit != nil {
@@ -68,22 +83,20 @@ func (g *Group) Go(fn func(context.Context) error) *Group {
 	return g
 }
 
+// Wait blocks until all the goroutines in this group have returned. If any
+// errors occur, the first error encountered will be returned. It will also
+// block until at least one goroutine is scheduled.
 func (g *Group) Wait() error {
+	g.mu.Lock()
+	ready := g.ready
+	g.mu.Unlock()
+	if ready != nil {
+		<-ready
+	}
+
 	g.wg.Wait()
 	if g.cancel != nil {
 		g.cancel(g.err)
 	}
 	return g.err
-}
-
-func (g *Group) WaitC() <-chan error {
-	errch := make(chan error)
-	go func() {
-		defer close(errch)
-		<-g.ready
-		if err := g.Wait(); err != nil {
-			errch <- err
-		}
-	}()
-	return errch
 }
