@@ -41,6 +41,20 @@ if err := g.Wait(); err != nil {
 
 Here, only 2 goroutines will ever be running at a given time.
 
+A group can also be setup using method chaining:
+
+```go
+if err := group.New(ctx).Go(func(ctx context.Context) error {
+    time.Sleep(1 * time.Second)
+    return nil
+}).Go(func(ctx context.Context) error {
+    time.Sleep(5 * time.Second)
+    return nil
+}).Wait(); err != nil {
+    log.Fatal(err)
+}
+```
+
 ## Notes
 
 * https://github.com/golang/go/issues/57534
