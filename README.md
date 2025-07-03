@@ -23,7 +23,7 @@ if err := g.Wait(); err != nil {
 
 The parent context provided is used to create a child context that group uses internally, which is passed through to each goroutine. If any goroutine produces an error, this child context is canceled, allowing the other goroutines to stop/cleanup:
 
-The option `WithLimit` can be passed to the group constructor to establish a bound on currency:
+The option `WithLimit` can be passed to the group constructor to establish a bound on concurrency:
 
 
 ```go
