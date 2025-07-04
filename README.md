@@ -1,4 +1,4 @@
-[![API Reference](https://img.shields.io/badge/api-reference-blue.svg)](https://pkg.go.dev/mod/go.chrisrx.dev/group)
+[![Go Reference](https://pkg.go.dev/badge/go.chrisrx.dev/group.svg)](https://pkg.go.dev/go.chrisrx.dev/group)
 
 # group
 
