@@ -26,6 +26,7 @@ type Group struct {
 
 	mu    sync.Mutex
 	ready chan struct{}
+	done  chan error
 
 	once sync.Once
 	err  error
@@ -99,4 +100,23 @@ func (g *Group) Wait() error {
 		g.cancel(g.err)
 	}
 	return g.err
+}
+
+// Done blocks until all the goroutines in this group have returned. If any
+// errors occur, the first error encountered is sent on the returned channel,
+// otherwise the channel is closed.
+func (g *Group) Done() <-chan error {
+	g.mu.Lock()
+	if g.done == nil {
+		g.done = make(chan error)
+		go func() {
+			g.done <- g.Wait()
+			g.mu.Lock()
+			close(g.done)
+			g.done = nil
+			g.mu.Unlock()
+		}()
+	}
+	g.mu.Unlock()
+	return g.done
 }

@@ -6,6 +6,9 @@ group is a library for managing pools of goroutines. It has been adapted from [e
 
 ## Usage
 
+
+## Simple
+
 This will create a new group and start 10 goroutines:
 
 ```go
@@ -22,6 +25,8 @@ if err := g.Wait(); err != nil {
 ```
 
 The parent context provided is used to create a child context that group uses internally, which is passed through to each goroutine. If any goroutine produces an error, this child context is canceled, allowing the other goroutines to stop/cleanup:
+
+## Bounded concurrency
 
 The option `WithLimit` can be passed to the group constructor to establish a bound on concurrency:
 
@@ -41,6 +46,9 @@ if err := g.Wait(); err != nil {
 
 Here, only 2 goroutines will ever be running at a given time.
 
+
+## Method chaining
+
 A group can also be setup using method chaining:
 
 ```go
@@ -52,6 +60,41 @@ if err := group.New(ctx).Go(func(ctx context.Context) error {
     return nil
 }).Wait(); err != nil {
     log.Fatal(err)
+}
+```
+
+## Results
+
+```go
+g := group.NewResultGroup[int](ctx)
+for i := range 10 {
+	g.Go(func(ctx context.Context) (int, error) {
+		return i, nil
+	})
+}
+
+for v, err := range g.Get() {
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(v)
+}
+```
+
+## Getting future result
+
+```go
+g := group.NewResultGroup[string](ctx)
+result := g.Go(func(ctx context.Context) (string, error) {
+	time.Sleep(500 * time.Millisecond)
+	return fmt.Sprintf("loop %d", i), nil
+})
+v, err := result.Get()
+if err != nil {
+	log.Fatal(err)
+}
+if err := g.Wait(); err != nil {
+	log.Fatal(err)
 }
 ```
 
