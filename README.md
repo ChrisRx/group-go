@@ -53,9 +53,11 @@ A group can also be setup using method chaining:
 
 ```go
 if err := group.New(ctx).Go(func(ctx context.Context) error {
+    fmt.Printf("goroutine 1\n")
     time.Sleep(1 * time.Second)
     return nil
 }).Go(func(ctx context.Context) error {
+    fmt.Printf("goroutine 2\n")
     time.Sleep(5 * time.Second)
     return nil
 }).Wait(); err != nil {
@@ -64,6 +66,7 @@ if err := group.New(ctx).Go(func(ctx context.Context) error {
 ```
 
 ## Results
+
 
 ```go
 g := group.NewResultGroup[int](ctx)
@@ -81,13 +84,13 @@ for v, err := range g.Get() {
 }
 ```
 
-## Getting future result
+## Getting a future result
 
 ```go
 g := group.NewResultGroup[string](ctx)
 result := g.Go(func(ctx context.Context) (string, error) {
 	time.Sleep(500 * time.Millisecond)
-	return fmt.Sprintf("loop %d", i), nil
+	return "future value", nil
 })
 v, err := result.Get()
 if err != nil {

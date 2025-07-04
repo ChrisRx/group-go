@@ -40,7 +40,7 @@ func (r *ResultGroup[T]) Go(fn func(context.Context) (T, error)) Future[T] {
 	r.g.Go(func(ctx context.Context) error {
 		_, err := f.Get()
 
-		// The results queue might not ever be read from so anything pass the
+		// The results queue might not ever be read from so anything past the
 		// channel buffer should just be dropped. This will be typical in cases
 		// where the returned future is handled manually (i.e. instead of using
 		// [ResultGroup.Get]).
