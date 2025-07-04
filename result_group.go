@@ -72,9 +72,6 @@ func (r *ResultGroup[T]) Get() iter.Seq2[T, error] {
 		results := r.results
 		r.mu.Unlock()
 		for result := range results {
-			if result == nil {
-				return
-			}
 			if !yield(result.Get()) {
 				return
 			}
